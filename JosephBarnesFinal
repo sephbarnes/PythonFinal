@@ -1,0 +1,175 @@
+# INF360 - Programming in Python
+# Joseph Barnes
+# Final
+# Document Formatting Toolkit
+
+'''
+NOTE: Testing text available to copy-paste at the bottom.
+
+Purpose:
+At my job I format documents that have been translated into other languages.
+This Program is a toolkit for formatting documents that have been translated
+into languages such as Arabic, that read from Right-to-Left. Microsoft word
+tends to ruin things like phone numbers by turning a number like
+(123)-456-7890 into 7890-456-(123) and I have to manually fix each one. But no longer!
+
+
+This program offers the following tools: 
+1. Find all phone numbers in a string (eventually in an entire document)
+and replace them with the corrected phone number
+2. Removes all newline characters from a copy-pasted text
+3. Lists all dates in a copy-pasted string so user can review formatting to make sure translators flipped them correctly
+'''
+import pyperclip  # corrected text in option 1 is added to clipboard for use
+import re  # allows Regex
+import os  # to clear the screen
+import copy  # create deepcopy of input text to manipulate while looping through original string
+import sys  # for sys.exit() to leave program
+import time  # pauses briefly after a function ends
+
+
+def main_menu():  # displays the main menu
+    print("Welcome to the formatter's toolkit.\n What would you like to do today?\n")
+    continueUse = ''
+    choice = ''
+    while (continueUse != '0'):
+        os.system('cls')  # clear the screen
+        # Display main menu
+        print('''-------Please select a tool by number.-------
+        1. Correct RTL phone numbers
+        2. Remove newline characters
+        3. Review date formatting
+        Enter Anything else to Exit
+        ''')
+
+        choice = input()  # get user choice
+        # validate_choice() # ensure user enters correct info
+        os.system('cls')  # clear the screen
+
+        # call the menu choice
+        if (choice == '1'):
+            RTL_phone_nums()
+        elif (choice == '2'):
+            remove_newline()
+        elif (choice == '3'):
+            review_dates()
+        else:
+            print("Goodbye!")
+            sys.exit()
+        time.sleep(2)
+        continueUse = input(
+            "Press any key to use another tool. Enter 0 to exit. ")
+    # end while
+    print("Goodbye!")
+# end mainMenu()
+
+
+def RTL_phone_nums():  # corrects phone numbers in a string (eventually in entire document)
+    try:
+        # use regex to build a list of all phone numbers in the string
+
+        # This regex matches bad/reversed phone numbers such as 7890-456-(123)
+        badPhoneNumRegex = re.compile(r'''    
+            (\d{4}[-\.\s]\d{3}[-\.\s]\d{3}|             #7890-456-123
+            \d{4}[-\.\s]\d{3}[-\.\s]\(\d{3}\)|          #7890.456.(123)
+            \d{4}[-\.\s]\(\d{3}\)\d{3}|                 #7890 (123)4567
+            \d{4}[-\.\s]\d{3})                       	#4567 123
+                                                        #doesn't need to handle extensions as they don't seem to get messed up
+            ''', re.VERBOSE)
+
+        # Take input including bad phone numbers to fix
+        print("Enter a string to fix the phone numbers ")
+        print("Copy-paste this test string to assist any testing: ")
+        print("test the bad numbers 7890 456 123 test 7890.456.123 test 7890-456-123 test 7890 456 test 7890-456 (123) test 7890-(123)456 test the good numbers 123-456-7890 test 123 4567 test (123) 456 7890 ")
+        inStr = input()  # will eventually read from a file instead
+        # get all the bad phone numbers in a match object (mo) list
+        mo = badPhoneNumRegex.findall(inStr)
+
+        # 2.
+        correctPhoneNums = []  # used to show the corrected numbers
+        newStr = copy.deepcopy(inStr)
+        newStrList = [newStr]         
+
+        # go through mo and create new list of corrected phone numbers
+        # piece together the segments of phone numbers to correct them
+        for i, pn in enumerate(mo):
+            if len(mo[i]) == 8:
+                newNum = mo[i][5:8] + mo[i][4:5] + mo[i][0:4]  # 4567-123
+            elif len(mo[i]) == 11:            
+                newNum = mo[i][5:8] + mo[i][4:5] + mo[i][8:11] + mo[i][4:5] + mo[i][0:4]  # 7890-123456 corrected to: 123 456 7890
+            elif len(mo[i]) == 12:
+                newNum = mo[i][9:12] + mo[i][8:9] + mo[i][5:8] + mo[i][4:5] + mo[i][0:4]  # 7890-456-123
+            elif len(mo[i]) == 13:
+                newNum = mo[i][5:13] + mo[i][4:5] + mo[i][0:4]  # 7890-(123)456
+            else:  # length is 14
+                newNum = mo[i][9:14] + mo[i][8:9] + mo[i][5:8] + mo[i][4:5] + mo[i][0:4]  # 7890-456-(123)
+
+            # add to list of corrected phone numbers
+            correctPhoneNums.append(newNum)
+            newStr = newStr.replace(pn, newNum)  # replace the phone numbers
+        if inStr != "":
+            print("Bad phone numbers: ")
+            print(mo)  # print
+
+            # print the new strin2
+            # once all numbers are changed
+            print("Corrected phone numbers: ")
+            print(correctPhoneNums)
+
+            print("The Final text copied to clipboard: \n" + newStr)
+            pyperclip.copy(newStr)  # add text to clipboard to be used
+        else:
+            print("The input was empty.")
+
+    except:
+        print("somthing went wrong. Goodbye.")
+        sys.exit()
+
+ # end of RTL_phone_nums()
+
+
+def remove_newline():  # removes all newline characters from copy-pasted text
+    print("Enter text to remove all newlines. Enter control + z alone on a new line to end input. control + d on mac.")
+    inStr = sys.stdin.readlines()  # gets input as a list of strings
+    newStr = "".join(inStr)  # turn input list into a string
+    newStr = newStr.replace("\r", "")  # remove carriage returns on windows and mac
+    newStr = newStr.replace("\n", "")  # removes newlines on windows and linux
+
+    print('\nHere is the string without newlines. ')
+    print(newStr)
+    
+#----------# NOTE #----------#
+# For review_dates()
+# When searching potential dates, this includes dates with the number 1 or a | as a separator as converting PDFs to word docs 
+# sometimes turns the / in a date into a 1 or |, especially when the date's font is in Italics 
+# numbers that aren't dates also show up for review because they still might be dates with typos...sadly it happens a lot
+
+# lists potential numeric dates that potentially could be ambiguous for review (i.e. 7/8/2023)
+def review_dates():  
+    dateRegex = re.compile(r''' 
+               \d[\d]?[\.-_\s/|1]\d[\d]?[\.-_\s/|1]\d{2}[\d\d]?|    #date-month-year or month-date-year
+               \d{2}[\d\d]?[\.-_\s/|1]\d[\d]?[\.-_\s/|1]\d[\d]?|    #year\month\date or year/date/month
+               \d[\d]?[\.-_\s/|1]\d[\d]?|                           #date-month or month_date
+               d{2}[\d\d]?[\.-_\s/|1]\d[\d]?|                       #year/month
+               \d[\d]?[\.-_\s/|1]d{2}[\d\d]?                        #month/year
+               #separate by -,.,/,spaces
+               ''', re.VERBOSE)
+
+    print("Enter text to review all dates. Enter control + z alone on a new line to end input. control + d on mac.")
+    inStr = sys.stdin.readlines()
+    inStr = " ".join(inStr)
+    newStr = dateRegex.findall(inStr)
+    print('\nHere are potential dates for review: ')
+    print(newStr)
+
+main_menu()  # start the program
+
+# example code to test this program's tools below:
+# Option 1:
+# test the bad numbers 7890 456 123 test 7890.456.123 test 7890-456-123 test 7890 456 test 7890-456 (123) test 7890-(123)456 test the good numbers 123-456-7890 test 123 4567 test (123) 456 7890
+#
+# Option 2:
+# Just type anything on keyboard and enter several lines
+# 
+# Option 3:
+# 4/4/2023 4/5/71 2013/29/7 1343/92/23 1234 test (this could be italic issue...11/11/11) 11|1112011
