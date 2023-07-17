@@ -6,11 +6,21 @@ import re  # allows Regex
 import copy  # create deepcopy of input text to manipulate while looping through original string
 import sys  # for sys.exit() to leave program
 import shutil # allows renaming files
+import os # used for searching files
+from pathlib import Path
 
+def validateFile(inStr): # validates that a filename exists
+    strRegex = re.compile(inStr)
+    for fileName in os.listdir('.'):
+        mo = strRegex.search(fileName)
+        if mo == None:
+            continue # continues through the loop
+        return True # if filename is found, return True
+    return False    # if not found, return False
 
-def RTL_phone_nums():  # corrects phone numbers in a string (eventually in entire document)
+def RTL_phone_nums():  # corrects phone numbers in a document)
     try:
-        # use regex to build a list of all phone numbers in the string
+        # use regex to build a list of all phone numbers in the document
 
         # This regex matches bad/reversed phone numbers such as 7890-456-(123)
         badPhoneNumRegex = re.compile(r'''    
@@ -21,18 +31,24 @@ def RTL_phone_nums():  # corrects phone numbers in a string (eventually in entir
                                                         #doesn't need to handle extensions as they don't seem to get messed up
             ''', re.VERBOSE)
 
-        # Take input including bad phone numbers to fix
-        print("Enter a string to fix the phone numbers ")
-        print("Copy-paste this test string to assist any testing: ")
-        print("test the bad numbers 7890 456 123 test 7890.456.123 test 7890-456-123 test 7890 456 test 7890-456 (123) test 7890-(123)456 test the good numbers 123-456-7890 test 123 4567 test (123) 456 7890 ")
-        inStr = input()  # will eventually read from a file instead
+        # open file to read from
+        inStr = input("Enter a file name (with extension) to fix the phone numbers ") 
+        
+        # validate the file name
+        while validateFile(inStr) == False:
+            inStr = input(f'File name: "{inStr}" not found. Try again (with file extension) or enter 0 to return to main menu.\n')
+            if inStr == '0':
+                return 0
+        
+        inFile = open("./" + inStr)
+        text = inFile.read()
+        inFile.close()
+                
         # get all the bad phone numbers in a match object (mo) list
-        mo = badPhoneNumRegex.findall(inStr)
-
-        # 2.
+        mo = badPhoneNumRegex.findall(text)
+        
         correctPhoneNums = []  # used to show the corrected numbers
-        newStr = copy.deepcopy(inStr)
-        newStrList = [newStr]         
+        newText = copy.deepcopy(text) #copy of input string 
 
         # go through mo and create new list of corrected phone numbers
         # piece together the segments of phone numbers to correct them
@@ -48,27 +64,24 @@ def RTL_phone_nums():  # corrects phone numbers in a string (eventually in entir
             else:  # length is 14
                 newNum = mo[i][9:14] + mo[i][8:9] + mo[i][5:8] + mo[i][4:5] + mo[i][0:4]  # 7890-456-(123)
 
-            # add to list of corrected phone numbers
-            correctPhoneNums.append(newNum)
-            newStr = newStr.replace(pn, newNum)  # replace the phone numbers
-        if inStr != "":
+            correctPhoneNums.append(newNum) # add to list of corrected phone numbers
+            newText = newText.replace(pn, newNum)  # replace the phone numbers
+        if text != "":
             print("Bad phone numbers: ")
             print(mo)  # print
 
-            # print the new strin2
-            # once all numbers are changed
+            # print the new string once all numbers are changed
             print("Corrected phone numbers: ")
             print(correctPhoneNums)
 
-            print("The Final text copied to clipboard: \n" + newStr)
-            pyperclip.copy(newStr)  # add text to clipboard to be used
+            print("The changed text was written to a new file successfully: new_text.txt\n")
+            newTextFile = open("./new_text.txt", "w")
+            newTextFile.write(newText)
         else:
             print("The input was empty.")
-
     except:
         print("somthing went wrong. Goodbye.")
         sys.exit()
-
  # end of RTL_phone_nums()
 
 def remove_newline():  # removes all newline characters from copy-pasted text
@@ -105,8 +118,50 @@ def review_dates():
     print('\nHere are potential dates for review: ')
     print(newStr)
 
-
-# Renames completed, translated files by replacing common language codes with their full names
-# So that clients can tell what language the document is. Great for when I deliver multiple documents in different languages that use arabic script
+#renames files in same directory as this file
 def replace_language_codes():
-    print('use logging in this code maybe?')
+    # regex for some common language codes
+    langCodeRegex = re.compile(r''' 
+                               ^(.*?) #all text before the language code
+                               \((es|fr|ar|sw)\) #language codes always inside parenthesis
+                               (.*?)$ #all text after the language code
+                               ''', re.VERBOSE)
+    count = 0 #count number of files renamed
+    
+    # loop through each file in directory of current file
+    for fileName in os.listdir('.'):
+        mo = langCodeRegex.search(fileName)
+        
+        # skip files without language codes
+        if mo == None:
+            continue
+        # get parts of the file name
+        firstPart = mo.group(1)
+        langCodePart = mo.group(2)
+        lastPart = mo.group(3)
+        
+        # get full language name
+        if langCodePart == 'sw':
+            langCodePart = 'Swahili'
+        elif langCodePart == 'fr':
+            langCodePart = 'French'
+        elif langCodePart == 'es':
+            langCodePart = 'Spanish'
+        elif langCodePart == 'ar':
+            langCodePart = 'Arabic'
+        
+        # make the new file name
+        newFileName = firstPart + '(' + langCodePart + ')' + lastPart
+        
+        # prepare the full file names
+        absWorkingDir = os.path.abspath('.')
+        fileName = os.path.join(absWorkingDir, fileName)
+        newFileName = os.path.join(absWorkingDir, newFileName)
+        
+        # rename file
+        print(f'renaming "{fileName}" to "{newFileName}"')
+        count += 1
+        shutil.move(fileName, newFileName)
+    print(f'renamed {count} files.')
+# end replace_language_codes    
+
