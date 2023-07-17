@@ -4,7 +4,7 @@
 # Document Formatting Toolkit
 
 '''
-NOTE: Testing text available to copy-paste at the bottom.
+NOTE: Testing guide and text available to copy-paste at the bottom.
 
 Purpose:
 At my job I format documents that have been translated into other languages.
@@ -15,19 +15,15 @@ tends to ruin things like phone numbers by turning a number like
 
 
 This program offers the following tools: 
-1. Find all phone numbers in a string (eventually in an entire document)
-and replace them with the corrected phone number
+1. Find all phone numbers in a document and replace them with the corrected phone number
 2. Removes all newline characters from a copy-pasted text
 3. Lists all dates in a copy-pasted string so user can review formatting to make sure translators flipped them correctly
 4. Renames files so the standard language code is replaced with the full name of the language
 '''
-#import pyperclip  # corrected text in option 1 is added to clipboard for use
-#import re  # allows Regex
+
 import os  # to clear the screen
-#import copy  # create deepcopy of input text to manipulate while looping through original string
 import sys  # for sys.exit() to leave program
 import time  # pauses briefly after a function ends
-#import shutil # allows renaming files
 import logging
 logging.basicConfig(filename='joeProgramLog.txt', level=logging.DEBUG, 
                     format='%(asctime)s -  %(levelname)s -  %(message)s')
@@ -83,11 +79,29 @@ def main_menu():  # displays the main menu
 main_menu()  # start the program
 
 # example code to test this program's tools below:
-# Option 1:
-# test the bad numbers 7890 456 123 test 7890.456.123 test 7890-456-123 test 7890 456 test 7890-456 (123) test 7890-(123)456 test the good numbers 123-456-7890 test 123 4567 test (123) 456 7890
+#
+# Option 1: Copy paste this code into a .txt file to test
+#
+# test the bad numbers 
+'''7890 456 123 
+test 7890.456.123 
+test 7890-456-123 
+test 7890 456 
+test 7890-456 (123) 
+test 7890-(123)456 
+
+test the good numbers (shouldn't change)
+123-456-7890 
+test 123 4567 
+test (123) 456 7890
+'''
 #
 # Option 2:
 # Just type anything on keyboard and enter several lines
 # 
 # Option 3:
 # 4/4/2023 4/5/71 2013/29/7 1343/92/23 1234 test (this could be italic issue...11/11/11) 11|1112011
+#
+# Option 4:
+# Create a file that has "(es)" at the end of the filename i.e. test(es).txt
+# Other examples: test(fr).txt      test_(ar).txt     test (sw).txt
